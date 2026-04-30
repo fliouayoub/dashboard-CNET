@@ -24,7 +24,7 @@ select {
 
 .cards {
     display:grid;
-    grid-template-columns:repeat(4,1fr);
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
     gap:10px;
     margin-bottom:15px;
 }
@@ -77,9 +77,10 @@ tr:nth-child(even){background:#f5f5f5;}
 <!-- KPI -->
 <div class="cards">
 <div class="card"><b id="kpiTx"></b><br>Transactions</div>
-<div class="card"><b id="kpiRej"></b><br>Rejets</div>
-<div class="card"><b id="kpiFil"></b><br>Filtrées</div>
+<div class="card"><b id="kpiRej"></b><br>Rejets par Cristal-NET</div>
+<div class="card"><b id="kpiFil"></b><br>Filtrées par l'engin</div>
 <div class="card"><b id="kpiRate"></b><br>Taux rejet</div>
+<div class="card"><b id="kpiFilRate"></b><br>Taux filtrage</div>
 </div>
 
 <div class="grid">
@@ -110,6 +111,24 @@ let data = [
   {year:2015, site:"Argenteuil", volet:"Microbiologie", tx:16646, rej:22, fil:322},
   {year:2015, site:"Antoine-Labelle", volet:"Microbiologie", tx:34667, rej:238, fil:729},
   {year:2015, site:"Argenteuil", volet:"Biochimie", tx:113407, rej:54, fil:875}
+ // {year:2015, site:"Antoine-Labelle", volet:"Biochimie", tx:100407, rej:54, fil:875},
+  /*
+  {year:2016, site:"Argenteuil", volet:"Microbiologie", tx:16646, rej:22, fil:322},
+  {year:2016, site:"Antoine-Labelle", volet:"Microbiologie", tx:34667, rej:238, fil:729},
+  {year:2016, site:"Argenteuil", volet:"Biochimie", tx:113407, rej:54, fil:875},
+  {year:2016, site:"Antoine-Labelle", volet:"Biochimie", tx:100407, rej:54, fil:875},
+  
+  {year:2017, site:"Argenteuil", volet:"Microbiologie", tx:16646, rej:22, fil:322},
+  {year:2017, site:"Antoine-Labelle", volet:"Microbiologie", tx:34667, rej:238, fil:729},
+  {year:2017, site:"Argenteuil", volet:"Biochimie", tx:113407, rej:54, fil:875},
+  {year:2017, site:"Antoine-Labelle", volet:"Biochimie", tx:100407, rej:54, fil:875},
+  
+  {year:2018, site:"Argenteuil", volet:"Microbiologie", tx:16646, rej:22, fil:322},
+  {year:2018, site:"Antoine-Labelle", volet:"Microbiologie", tx:34667, rej:238, fil:729},
+  {year:2018, site:"Argenteuil", volet:"Biochimie", tx:113407, rej:54, fil:875},
+  {year:2018, site:"Antoine-Labelle", volet:"Biochimie", tx:100407, rej:54, fil:875}
+  */
+  
 ];
 
 
@@ -168,46 +187,75 @@ kpiTx.innerText=t.toLocaleString();
 kpiRej.innerText=r.toLocaleString();
 kpiFil.innerText=f.toLocaleString();
 kpiRate.innerText=t?((r/t)*100).toFixed(2)+"%":"0%";
+kpiFilRate.innerText = t ? ((f/t)*100).toFixed(2)+"%" : "0%";
 
 
 // =======================
-// 📊 GRAPH 1 (PAR SITE)
+// 📊 GRAPH 1 (SITE + VOLET)
 // =======================
 
-// récupérer les années uniques
+// années
 let years = [...new Set(filtered.map(d => d.year))].sort();
 
-// récupérer les sites uniques
+// sites et volets
 let sites = [...new Set(filtered.map(d => d.site))];
+let volets = [...new Set(filtered.map(d => d.volet))];
 
-// initialiser structure
-let datasetMap = {};
+// couleurs par site
+let baseColors = {
+"Antoine-Labelle":"#3b82f6",
+"Argenteuil":"#10b981"
+};
+
+// fonction pour éclaircir (pour différencier volets)
+function lighten(color, percent){
+let num = parseInt(color.replace("#",""),16),
+amt = Math.round(2.55 * percent),
+R = (num >> 16) + amt,
+G = (num >> 8 & 0x00FF) + amt,
+B = (num & 0x0000FF) + amt;
+return "#" + (
+0x1000000 +
+(R<255?R<1?0:R:255)*0x10000 +
+(G<255?G<1?0:G:255)*0x100 +
+(B<255?B<1?0:B:255)
+).toString(16).slice(1);
+}
+
+// construire datasets
+let datasets = [];
 
 sites.forEach(site=>{
-datasetMap[site] = years.map(y=>{
+volets.forEach((volet,i)=>{
+
+let dataPoints = years.map(y=>{
 let total = 0;
 filtered.forEach(d=>{
-if(d.year == y && d.site === site){
+if(d.year==y && d.site===site && d.volet===volet){
 total += d.tx;
 }
 });
 return total;
 });
+
+// couleur = base site + variation
+let color = i===0 
+? baseColors[site]
+: lighten(baseColors[site], 25);
+
+datasets.push({
+label: site + " - " + volet,
+data: dataPoints,
+backgroundColor: color
 });
 
-// transformer en datasets Chart.js
-let datasets = sites.map(site=>({
-label: site,
-data: datasetMap[site]
-}));
+});
+});
 
-// sécurité si vide
+// fallback
 if(years.length === 0){
 years = ["Aucune donnée"];
-datasets = [{
-label:"Aucun",
-data:[0]
-}];
+datasets = [{label:"Aucun",data:[0]}];
 }
 
 if(c1)c1.destroy();
