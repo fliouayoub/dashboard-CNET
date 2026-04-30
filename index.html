@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Suivi Cortex → Cristal-NET</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {font-family:'Segoe UI';background:#eef2f7;margin:0;}
+header {background:#1f2c42;color:white;padding:15px;text-align:center;}
+
+.container {padding:15px;max-width:1200px;margin:auto;}
+
+.filters {
+    display:flex;
+    gap:10px;
+    margin-bottom:15px;
+}
+
+select {
+    padding:6px;
+    border-radius:6px;
+}
+
+.cards {
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+    margin-bottom:15px;
+}
+
+.card {background:white;padding:10px;border-radius:8px;text-align:center;}
+
+.grid {
+    display:grid;
+    grid-template-columns:1.5fr 1fr;
+    gap:10px;
+    margin-bottom:10px;
+}
+
+canvas {background:white;padding:10px;border-radius:8px;height:250px !important;}
+
+table {width:100%;border-collapse:collapse;background:white;}
+th,td {padding:6px;text-align:center;}
+th {background:#1f2c42;color:white;cursor:pointer;}
+tr:nth-child(even){background:#f5f5f5;}
+</style>
+</head>
+
+<body>
+
+<header>
+<h2>Chargement Cortex → Cristal-NET</h2>
+</header>
+
+<div class="container">
+
+<!-- 🔎 FILTRES -->
+<div class="filters">
+<select id="yearFilter" onchange="update()">
+<option value="all">Toutes années</option>
+</select>
+
+<select id="siteFilter" onchange="update()">
+<option value="all">Tous sites</option>
+<option>Antoine Labelle</option>
+<option>Argenteuil</option>
+</select>
+
+<select id="voletFilter" onchange="update()">
+<option value="all">Tous volets</option>
+<option>Microbiologie</option>
+<option>Biochimie</option>
+</select>
+</div>
+
+<!-- KPI -->
+<div class="cards">
+<div class="card"><b id="kpiTx"></b><br>Transactions</div>
+<div class="card"><b id="kpiRej"></b><br>Rejets</div>
+<div class="card"><b id="kpiFil"></b><br>Filtrées</div>
+<div class="card"><b id="kpiRate"></b><br>Taux rejet</div>
+</div>
+
+<div class="grid">
+<canvas id="chart1"></canvas>
+<canvas id="chart2"></canvas>
+</div>
+
+<table>
+<thead>
+<tr>
+<th onclick="sort('year')">Année</th>
+<th onclick="sort('site')">Site</th>
+<th onclick="sort('volet')">Volet</th>
+<th onclick="sort('tx')">Trx</th>
+<th onclick="sort('rej')">Rejets</th>
+<th onclick="sort('fil')">Filtrées</th>
+</tr>
+</thead>
+<tbody id="table"></tbody>
+</table>
+
+</div>
+
+<script>
+
+// 👉 TES DONNÉES
+let data = [
+  {year:2015, site:"Argenteuil", volet:"Microbiologie", tx:16646, rej:22, fil:322},
+  {year:2015, site:"Antoine-Labelle", volet:"Microbiologie", tx:34667, rej:20, fil:131}
+];
+
+
+// 🔽 remplir filtre année dynamiquement
+let years = [...new Set(data.map(d => d.year))];
+years.forEach(y=>{
+yearFilter.innerHTML += `<option>${y}</option>`;
+});
+
+// 🔽 tri
+let asc=true;
+function sort(col){
+asc=!asc;
+data.sort((a,b)=>{
+if(typeof a[col]==="string") return asc?a[col].localeCompare(b[col]):b[col].localeCompare(a[col]);
+return asc?a[col]-b[col]:b[col]-a[col];
+});
+update();
+}
+
+let c1,c2;
+
+function update(){
+
+let yf=yearFilter.value;
+let sf=siteFilter.value;
+let vf=voletFilter.value;
+
+// 🔎 filtre
+let filtered = data.filter(d=>
+(yf==="all"||d.year==yf)&&
+(sf==="all"||d.site===sf)&&
+(vf==="all"||d.volet===vf)
+);
+
+// KPI
+let t=0,r=0,f=0;
+table.innerHTML="";
+
+filtered.forEach(d=>{
+t+=d.tx;
+r+=d.rej;
+f+=d.fil;
+
+table.innerHTML+=`<tr>
+<td>${d.year}</td>
+<td>${d.site}</td>
+<td>${d.volet}</td>
+<td>${d.tx}</td>
+<td>${d.rej}</td>
+<td>${d.fil}</td>
+</tr>`;
+});
+
+kpiTx.innerText=t.toLocaleString();
+kpiRej.innerText=r.toLocaleString();
+kpiFil.innerText=f.toLocaleString();
+kpiRate.innerText=t?((r/t)*100).toFixed(2)+"%":"0%";
+
+
+// =======================
+// 📊 GRAPH 1 (PAR SITE)
+// =======================
+
+// récupérer les années uniques
+let years = [...new Set(filtered.map(d => d.year))].sort();
+
+// récupérer les sites uniques
+let sites = [...new Set(filtered.map(d => d.site))];
+
+// initialiser structure
+let datasetMap = {};
+
+sites.forEach(site=>{
+datasetMap[site] = years.map(y=>{
+let total = 0;
+filtered.forEach(d=>{
+if(d.year == y && d.site === site){
+total += d.tx;
+}
+});
+return total;
+});
+});
+
+// transformer en datasets Chart.js
+let datasets = sites.map(site=>({
+label: site,
+data: datasetMap[site]
+}));
+
+// sécurité si vide
+if(years.length === 0){
+years = ["Aucune donnée"];
+datasets = [{
+label:"Aucun",
+data:[0]
+}];
+}
+
+if(c1)c1.destroy();
+
+c1 = new Chart(chart1,{
+type:'bar',
+data:{
+labels: years,
+datasets: datasets
+},
+options:{
+responsive:true,
+plugins:{
+legend:{position:'top'}
+}
+}
+});
+
+
+// =======================
+// 📊 GRAPH 2 (QUALITÉ)
+// =======================
+if(c2)c2.destroy();
+
+c2=new Chart(chart2,{
+type:'doughnut',
+data:{
+labels:["Rejets","Filtrées","OK"],
+datasets:[{
+data:[
+r,
+f,
+Math.max(0,t-r-f) // évite valeur négative
+]
+}]
+}
+});
+
+}
+
+update();
+
+</script>
+
+</body>
+</html>
