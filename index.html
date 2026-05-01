@@ -7,72 +7,80 @@
 
 <style>
 body {font-family:'Segoe UI';background:#eef2f7;margin:0;}
-header {background:#1f2c42;color:white;padding:15px;text-align:center;}
+
+header {
+background:#1f2c42;
+color:white;
+padding:15px;
+text-align:center;
+}
 
 .container {padding:15px;max-width:1200px;margin:auto;}
 
-.filters {
-    display:flex;
-    gap:10px;
-    margin-bottom:15px;
-}
-
-select {
-    padding:6px;
-    border-radius:6px;
-}
-
-.cards {
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-    gap:10px;
-    margin-bottom:15px;
-}
-
-.card {background:white;padding:10px;border-radius:8px;text-align:center;}
-
-.grid {
-    display:grid;
-    grid-template-columns:1.5fr 1fr;
-    gap:10px;
-    margin-bottom:10px;
-}
-
-
-
-@keyframes fadeIn {
-from {opacity:0; transform: translateY(-5px);}
-to {opacity:1; transform: translateY(0);}
-}
-
-
-#statusMessage {
+#statusMessage{
 background: linear-gradient(90deg, #fff3cd, #ffe69c);
-color: #856404;
-padding: 12px;
-margin: 15px;
-border-radius: 10px;
-text-align: center;
-font-weight: bold;
-box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-border-left: 6px solid #ffc107;
+color:#856404;
+padding:10px;
+margin:10px 0;
+border-radius:10px;
+text-align:center;
+font-weight:bold;
 }
 
-@keyframes slideIn {
-from {opacity:0; transform: translateY(-10px);}
-to {opacity:1; transform: translateY(0);}
+.filters{display:flex;gap:10px;margin-bottom:15px;}
+select{padding:6px;border-radius:6px;}
+
+.cards{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+gap:10px;
+margin-bottom:15px;
 }
 
-#statusMessage {
-animation: slideIn 0.5s ease;
+.card{
+background:white;
+padding:12px;
+border-radius:8px;
+text-align:center;
+box-shadow:0 2px 5px rgba(0,0,0,0.1);
 }
 
-canvas {background:white;padding:10px;border-radius:8px;height:250px !important;}
+.grid{
+display:grid;
+grid-template-columns:1.5fr 1fr;
+gap:10px;
+margin-bottom:10px;
+}
 
-table {width:100%;border-collapse:collapse;background:white;}
-th,td {padding:6px;text-align:center;}
-th {background:#1f2c42;color:white;cursor:pointer;}
+canvas{
+background:white;
+padding:10px;
+border-radius:8px;
+height:250px !important;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+background:white;
+}
+
+th,td{
+padding:6px;
+text-align:center;
+}
+
+th{
+background:#1f2c42;
+color:white;
+cursor:pointer;
+}
+
 tr:nth-child(even){background:#f5f5f5;}
+
+tr.done{background:#e8f5e9;}
+tr.in_progress{background:#fff8e1;}
+tr.not_started{background:#f3f4f6;}
 </style>
 </head>
 
@@ -82,13 +90,13 @@ tr:nth-child(even){background:#f5f5f5;}
 <h2>Chargement Cortex → Cristal-NET</h2>
 </header>
 
-<div id="statusMessage">
-⏳ Chargement en cours de Microbiologie de l'année 2016 d'Antoine Labelle
-</div>
-
 <div class="container">
 
-<!-- 🔎 FILTRES -->
+<div id="statusMessage">
+⏳ Chargement en cours de Microbiologie - 2016 - Antoine Labelle
+</div>
+
+<!-- FILTRES -->
 <div class="filters">
 <select id="yearFilter" onchange="update()">
 <option value="all">Toutes années</option>
@@ -96,7 +104,7 @@ tr:nth-child(even){background:#f5f5f5;}
 
 <select id="siteFilter" onchange="update()">
 <option value="all">Tous sites</option>
-<option>Antoine Labelle</option>
+<option>Antoine-Labelle</option>
 <option>Argenteuil</option>
 </select>
 
@@ -110,9 +118,8 @@ tr:nth-child(even){background:#f5f5f5;}
 <!-- KPI -->
 <div class="cards">
 <div class="card"><b id="kpiTx"></b><br>Transactions</div>
-<div class="card"><b id="kpiRej"></b><br>Rejets par Cristal-NET</div>
-<div class="card"><b id="kpiFil"></b><br>Filtrées par l'engin</div>
-<div class="card"><b id="kpiSucess"></b><br>Taux succès</div>
+<div class="card"><b id="kpiRej"></b><br>Rejets</div>
+<div class="card"><b id="kpiFil"></b><br>Filtrées</div>
 <div class="card"><b id="kpiRate"></b><br>Taux rejet</div>
 <div class="card"><b id="kpiFilRate"></b><br>Taux filtrage</div>
 </div>
@@ -128,9 +135,10 @@ tr:nth-child(even){background:#f5f5f5;}
 <th onclick="sort('year')">Année</th>
 <th onclick="sort('site')">Site</th>
 <th onclick="sort('volet')">Volet</th>
-<th onclick="sort('tx')">Trx</th>
+<th onclick="sort('tx')">Tx</th>
 <th onclick="sort('rej')">Rejets</th>
 <th onclick="sort('fil')">Filtrées</th>
+<th>Statut</th>
 </tr>
 </thead>
 <tbody id="table"></tbody>
@@ -140,44 +148,58 @@ tr:nth-child(even){background:#f5f5f5;}
 
 <script>
 
-// 👉 TES DONNÉES
+// ================= DATA =================
 let data = [
-  {year:2015, site:"Argenteuil", volet:"Microbiologie", tx:16646, rej:22, fil:322},
-  {year:2015, site:"Antoine-Labelle", volet:"Microbiologie", tx:34667, rej:238, fil:729},
-  {year:2015, site:"Argenteuil", volet:"Biochimie", tx:113407, rej:376, fil:3030}
+
+/*
+{year:2015, site:"Argenteuil", volet:"Microbiologie", tx:16646, rej:22, fil:322, status:"done"},
+{year:2015, site:"Antoine-Labelle", volet:"Microbiologie", tx:34667, rej:238, fil:729, status:"done"},
+
+{year:2016, site:"Argenteuil", volet:"Microbiologie", tx:20000, rej:0, fil:0, status:"in_progress"},
+{year:2017, site:"Argenteuil", volet:"Microbiologie", tx:33564, rej:0, fil:0, status:"not_started"}
+
+*/
+
+
+  {year:2015, site:"Argenteuil", volet:"Microbiologie", tx:16646, rej:22, fil:322, status:"done"},
+  {year:2015, site:"Antoine-Labelle", volet:"Microbiologie", tx:34667, rej:238, fil:729, status:"done"},
+  {year:2015, site:"Argenteuil", volet:"Biochimie", tx:113407, rej:376, fil:3030, status:"done"},
  // {year:2015, site:"Antoine-Labelle", volet:"Biochimie", tx:100407, rej:54, fil:875},
-  /*
-  {year:2016, site:"Argenteuil", volet:"Microbiologie", tx:16646, rej:22, fil:322},
-  {year:2016, site:"Antoine-Labelle", volet:"Microbiologie", tx:34667, rej:238, fil:729},
-  {year:2016, site:"Argenteuil", volet:"Biochimie", tx:113407, rej:54, fil:875},
-  {year:2016, site:"Antoine-Labelle", volet:"Biochimie", tx:100407, rej:54, fil:875},
   
-  {year:2017, site:"Argenteuil", volet:"Microbiologie", tx:16646, rej:22, fil:322},
-  {year:2017, site:"Antoine-Labelle", volet:"Microbiologie", tx:34667, rej:238, fil:729},
-  {year:2017, site:"Argenteuil", volet:"Biochimie", tx:113407, rej:54, fil:875},
-  {year:2017, site:"Antoine-Labelle", volet:"Biochimie", tx:100407, rej:54, fil:875},
-  
-  {year:2018, site:"Argenteuil", volet:"Microbiologie", tx:16646, rej:22, fil:322},
-  {year:2018, site:"Antoine-Labelle", volet:"Microbiologie", tx:34667, rej:238, fil:729},
-  {year:2018, site:"Argenteuil", volet:"Biochimie", tx:113407, rej:54, fil:875},
-  {year:2018, site:"Antoine-Labelle", volet:"Biochimie", tx:100407, rej:54, fil:875}
-  */
-  
+  //{year:2016, site:"Argenteuil", volet:"Microbiologie", tx:16646, rej:22, fil:322, done:true},
+  {year:2016, site:"Antoine-Labelle", volet:"Microbiologie", tx:35553, rej:0, fil:0, status:"in_progress"},
+  {year:2017, site:"Antoine-Labelle", volet:"Microbiologie", tx:37468, rej:0, fil:0, status:"not_started"},
+  {year:2018, site:"Antoine-Labelle", volet:"Microbiologie", tx:38170, rej:0, fil:0, status:"not_started"},
+  {year:2019, site:"Antoine-Labelle", volet:"Microbiologie", tx:38371, rej:0, fil:0, status:"not_started"},
+  {year:2020, site:"Antoine-Labelle", volet:"Microbiologie", tx:30542, rej:0, fil:0, status:"not_started"},
+  {year:2021, site:"Antoine-Labelle", volet:"Microbiologie", tx:31362, rej:0, fil:0, status:"not_started"},
+  {year:2022, site:"Antoine-Labelle", volet:"Microbiologie", tx:32265, rej:0, fil:0, status:"not_started"},
+  {year:2023, site:"Antoine-Labelle", volet:"Microbiologie", tx:35578, rej:0, fil:0, status:"not_started"},
+  {year:2024, site:"Antoine-Labelle", volet:"Microbiologie", tx:32190, rej:0, fil:0, status:"not_started"},
+  {year:2025, site:"Antoine-Labelle", volet:"Microbiologie", tx:21704, rej:0, fil:0, status:"not_started"}
+  //{year:2016, site:"Argenteuil", volet:"Biochimie", tx:113407, rej:376, fil:3030, done:true}
+ // {year:2016, site:"Antoine-Labelle", volet:"Biochimie", tx:100407, rej:54, fil:875},
+ 
+ 
+
+
+
+
 ];
 
-
-// 🔽 remplir filtre année dynamiquement
+// remplir années
 let years = [...new Set(data.map(d => d.year))];
 years.forEach(y=>{
 yearFilter.innerHTML += `<option>${y}</option>`;
 });
 
-// 🔽 tri
+// tri
 let asc=true;
 function sort(col){
 asc=!asc;
 data.sort((a,b)=>{
-if(typeof a[col]==="string") return asc?a[col].localeCompare(b[col]):b[col].localeCompare(a[col]);
+if(typeof a[col]==="string")
+return asc?a[col].localeCompare(b[col]):b[col].localeCompare(a[col]);
 return asc?a[col]-b[col]:b[col]-a[col];
 });
 update();
@@ -191,145 +213,122 @@ let yf=yearFilter.value;
 let sf=siteFilter.value;
 let vf=voletFilter.value;
 
-// 🔎 filtre
+// filtre affichage
 let filtered = data.filter(d=>
 (yf==="all"||d.year==yf)&&
 (sf==="all"||d.site===sf)&&
 (vf==="all"||d.volet===vf)
 );
 
-// KPI
+// KPI = seulement terminés
+let completed = filtered.filter(d=>d.status==="done");
+
+// ================= KPI =================
 let t=0,r=0,f=0;
 table.innerHTML="";
 
-filtered.forEach(d=>{
+completed.forEach(d=>{
 t+=d.tx;
 r+=d.rej;
 f+=d.fil;
+});
 
-table.innerHTML+=`<tr>
+kpiTx.innerText=t.toLocaleString();
+kpiRej.innerText=r.toLocaleString();
+kpiFil.innerText=f.toLocaleString();
+kpiRate.innerText=t?((r/t)*100).toFixed(2)+"%":"0%";
+kpiFilRate.innerText=t?((f/t)*100).toFixed(2)+"%":"0%";
+
+// ================= TABLE =================
+filtered.forEach(d=>{
+
+let cls =
+d.status==="done" ? "done" :
+d.status==="in_progress" ? "in_progress" :
+"not_started";
+
+let label =
+d.status==="done" ? "✅ Terminé" :
+d.status==="in_progress" ? "⏳ En cours" :
+"⏸️ Non débuté";
+
+table.innerHTML+=`
+<tr class="${cls}">
 <td>${d.year}</td>
 <td>${d.site}</td>
 <td>${d.volet}</td>
 <td>${d.tx}</td>
 <td>${d.rej}</td>
 <td>${d.fil}</td>
+<td>${label}</td>
 </tr>`;
 });
 
-kpiTx.innerText=t.toLocaleString();
-kpiRej.innerText=r.toLocaleString();
-kpiFil.innerText=f.toLocaleString();
-kpiSucess.innerText=t?(((t-r-f)/t)*100).toFixed(2)+"%":"0%";
-kpiRate.innerText=t?((r/t)*100).toFixed(2)+"%":"0%";
-kpiFilRate.innerText = t ? ((f/t)*100).toFixed(2)+"%" : "0%";
+// ================= GRAPH 1 =================
+let yearsData = [...new Set(completed.map(d=>d.year))].sort();
+let sites = [...new Set(completed.map(d=>d.site))];
+let volets = [...new Set(completed.map(d=>d.volet))];
 
-
-// =======================
-// 📊 GRAPH 1 (SITE + VOLET)
-// =======================
-
-// années
-let years = [...new Set(filtered.map(d => d.year))].sort();
-
-// sites et volets
-let sites = [...new Set(filtered.map(d => d.site))];
-let volets = [...new Set(filtered.map(d => d.volet))];
-
-// couleurs par site
-let baseColors = {
+let colors = {
 "Antoine-Labelle":"#3b82f6",
 "Argenteuil":"#10b981"
 };
 
-// fonction pour éclaircir (pour différencier volets)
-function lighten(color, percent){
-let num = parseInt(color.replace("#",""),16),
-amt = Math.round(2.55 * percent),
-R = (num >> 16) + amt,
-G = (num >> 8 & 0x00FF) + amt,
-B = (num & 0x0000FF) + amt;
-return "#" + (
-0x1000000 +
-(R<255?R<1?0:R:255)*0x10000 +
-(G<255?G<1?0:G:255)*0x100 +
-(B<255?B<1?0:B:255)
-).toString(16).slice(1);
+function lighten(color, p){
+let n=parseInt(color.replace("#",""),16),
+a=Math.round(2.55*p),
+r=(n>>16)+a,
+g=(n>>8&0xff)+a,
+b=(n&0xff)+a;
+return "#"+(0x1000000+
+(r<255?r:255)*0x10000+
+(g<255?g:255)*0x100+
+(b<255?b:255)).toString(16).slice(1);
 }
 
-// construire datasets
-let datasets = [];
+let datasets=[];
 
 sites.forEach(site=>{
 volets.forEach((volet,i)=>{
 
-let dataPoints = years.map(y=>{
-let total = 0;
-filtered.forEach(d=>{
-if(d.year==y && d.site===site && d.volet===volet){
-total += d.tx;
-}
+let vals = yearsData.map(y=>{
+let sum=0;
+completed.forEach(d=>{
+if(d.year==y && d.site===site && d.volet===volet)
+sum+=d.tx;
 });
-return total;
+return sum;
 });
 
-// couleur = base site + variation
-let color = i===0 
-? baseColors[site]
-: lighten(baseColors[site], 25);
+let col = i===0 ? colors[site] : lighten(colors[site],25);
 
 datasets.push({
-label: site + " - " + volet,
-data: dataPoints,
-backgroundColor: color
+label:site+" - "+volet,
+data:vals,
+backgroundColor:col
 });
 
 });
 });
-
-// fallback
-if(years.length === 0){
-years = ["Aucune donnée"];
-datasets = [{label:"Aucun",data:[0]}];
-}
 
 if(c1)c1.destroy();
 
-c1 = new Chart(chart1,{
+c1=new Chart(chart1,{
 type:'bar',
-data:{
-labels: years,
-datasets: datasets
-},
-options:{
-responsive:true,
-plugins:{
-legend:{position:'top'}
-}
-}
+data:{labels:yearsData,datasets},
+options:{responsive:true}
 });
 
-
-// =======================
-// 📊 GRAPH 2 (QUALITÉ)
-// =======================
+// ================= GRAPH 2 =================
 if(c2)c2.destroy();
 
 c2=new Chart(chart2,{
 type:'doughnut',
 data:{
 labels:["Rejets","Filtrées","OK"],
-datasets:[{
-data:[
-r,
-f,
-Math.max(0,t-r-f) // évite valeur négative
-]
-}]
+datasets:[{data:[r,f,Math.max(0,t-r-f)]}]
 }
 });
-
-
 
 }
 
