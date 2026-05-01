@@ -79,6 +79,7 @@ tr:nth-child(even){background:#f5f5f5;}
 <div class="card"><b id="kpiTx"></b><br>Transactions</div>
 <div class="card"><b id="kpiRej"></b><br>Rejets par Cristal-NET</div>
 <div class="card"><b id="kpiFil"></b><br>Filtrées par l'engin</div>
+<div class="card"><b id="kpiSucess"></b><br>Taux succès</div>
 <div class="card"><b id="kpiRate"></b><br>Taux rejet</div>
 <div class="card"><b id="kpiFilRate"></b><br>Taux filtrage</div>
 </div>
@@ -186,6 +187,7 @@ table.innerHTML+=`<tr>
 kpiTx.innerText=t.toLocaleString();
 kpiRej.innerText=r.toLocaleString();
 kpiFil.innerText=f.toLocaleString();
+kpiSucess.innerText=t?(((t-r-f)/t)*100).toFixed(2)+"%":"0%";
 kpiRate.innerText=t?((r/t)*100).toFixed(2)+"%":"0%";
 kpiFilRate.innerText = t ? ((f/t)*100).toFixed(2)+"%" : "0%";
 
